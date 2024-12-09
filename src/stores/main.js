@@ -69,15 +69,17 @@ export default defineStore("main", () => {
       return;
     }
 
+    const str = pkg.value.ShaderLib[shader.value][kind.value + "Shader"];
+
     if (!compilation.value) {
-      glslCode.value = pkg.value.ShaderLib[shader.value][kind.value + "Shader"];
+      glslCode.value = str;
       return;
     }
 
     try {
-      glslCode.value = compileMaterial(pkg.value, shader.value, kind.value);
+      glslCode.value = compileMaterial(pkg.value, shader.value, kind.value) + str;
     } catch (e) {
-      glslCode.value = `// Compiled version of this shader is not available \n// ${e}`;
+      glslCode.value = `// Compiled version of this shader is not available \n` + str;
     }
   });
 

@@ -1,21 +1,21 @@
-let _renderer, _scene, _camera, _mesh, _geometry, _compiledShader, _shaderRef;
+let _renderer, _scene, _camera, _mesh, _geometry, _shaderRef;
+
+const SEPARATOR = "ErrorSeparator";
 
 const onShaderError = (kind) => (gl, _, vs, fs) => {
   //
-  // The compiled shader result on statements that are not present before the first line of _shaderRef
+  // The compiled shader result on statements that are not present before the first line of the not compiled shader
   //
+
+  const regex = new RegExp(`([\\s\\S]*?)(?=${SEPARATOR})`, "gm");
 
   let shader = gl.getShaderSource(kind === "vertex" ? vs : fs);
   if (!shader) throw new Error("shader source not found");
-
-  const separator = _shaderRef.match(/^(.*)$/m)[0]; // separator is the first line of _shaderRef
-  const regex = new RegExp(`([\\s\\S]*?)(?=${separator})`, "gm");
   shader = shader.match(regex); // get all characters from the beginning to the separator
-  if (!shader) throw new Error(`line "${separator}" not found'`);
-
+  if (!shader) throw new Error(`line "${SEPARATOR}" not found`);
   shader = shader[0].replace(/^[ \t]+(?=precision)/gm, ""); // additional: remove space and tab before "precision" statements
-  _shaderRef = shader + _shaderRef;
-  _shaderRef = _shaderRef.slice(0, -1); // remove the '/' at the end
+
+  _shaderRef = shader;
 };
 
 export const setupThree = (Three) => {
@@ -42,7 +42,7 @@ export const compileMaterial = (Three, shader, kind) => {
   const material = new Three[materialName]();
   material.onBeforeCompile = (glShader) => {
     const type = `${kind}Shader`;
-    _shaderRef = glShader[type] = glShader[type] + "/"; // adding '/' at the end to provoke error
+    glShader[type] = SEPARATOR + glShader[type]; // porvoke a desired error
   };
 
   //
@@ -58,7 +58,7 @@ export const compileMaterial = (Three, shader, kind) => {
   // Render
   //
 
-  _renderer.debug.onShaderError = onShaderError(kind);
+  _renderer.debug.onShaderError = onShaderError(kind); // get shader source from provoked error ;
   _scene.add(_camera, _mesh);
   _renderer.render(_scene, _camera);
 
