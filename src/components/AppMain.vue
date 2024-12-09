@@ -1,15 +1,16 @@
 <script setup>
-import SourceViewer from "./SourceViewer.vue"
-import Widgets from "./Widgets.vue"
-import useMainStore from "../stores/main"
-import { ref, computed } from "vue"
-import { storeToRefs } from "pinia"
-import { useRoute } from "vue-router"
+import SourceViewer from "./SourceViewer.vue";
+import Widgets from "./Widgets.vue";
+import useMainStore from "../stores/main";
+import { ref, computed } from "vue";
+import { storeToRefs } from "pinia";
+import { useRoute } from "vue-router";
 
 const mainStore = useMainStore();
-const { glslCode, semver, pkg, loadState, shader, kind, loadError } = storeToRefs(mainStore);
+const { glslCode, semver, pkg, loadState, shader, kind, loadError, compilation } =
+  storeToRefs(mainStore);
 
-// 
+//
 // Sync states with route
 //
 
@@ -26,12 +27,12 @@ const isLoading = computed(() => loadState.value === "pending");
 const isLoadOk = computed(() => loadState.value === "fulfilled");
 const isLoadErr = computed(() => loadState.value === "rejected");
 
-// 
-// Compute shaders list and ShaderChunk 
+//
+// Compute shaders list and ShaderChunk
 //
 
 const ShaderChunk = computed(() => pkg.value?.ShaderChunk);
-const shaders = computed(() => pkg.value ? Object.keys(pkg.value.ShaderLib) : []);
+const shaders = computed(() => (pkg.value ? Object.keys(pkg.value.ShaderLib) : []));
 
 //
 // Theming
@@ -39,7 +40,7 @@ const shaders = computed(() => pkg.value ? Object.keys(pkg.value.ShaderLib) : []
 
 const mqList = matchMedia("(prefers-color-scheme: dark)");
 const dark = ref(mqList.matches);
-mqList.addEventListener("change", ({ matches }) => dark.value = matches);
+mqList.addEventListener("change", ({ matches }) => (dark.value = matches));
 
 //
 // Folding
@@ -50,11 +51,9 @@ const onFoldAll = () => viewer.value.foldAll();
 const onUnfoldAll = () => viewer.value.unfoldAll();
 </script>
 
-
-
 <template>
   <main class="host" :class="{ dark }">
-    <Widgets class="widgets" @switch-theme="dark =!dark"/>
+    <Widgets class="widgets" @switch-theme="dark = !dark" />
     <nav>
       <ul>
         <li v-if="!isLoading">
@@ -72,6 +71,12 @@ const onUnfoldAll = () => viewer.value.unfoldAll();
           </select>
         </li>
         <li v-if="isLoadOk">
+          <select v-model="compilation" title="shader compilation">
+            <option :value="false">before compilation</option>
+            <option :value="true">after compilation</option>
+          </select>
+        </li>
+        <li v-if="isLoadOk">
           <button @click="onUnfoldAll" title="unfold all #include">unfold All</button>
           <button @click="onFoldAll" title="fold all #include">fold All</button>
         </li>
@@ -82,8 +87,6 @@ const onUnfoldAll = () => viewer.value.unfoldAll();
     <pre v-if="isLoadErr" class="msg">{{ loadError }}</pre>
   </main>
 </template>
-
-
 
 <style scoped>
 @import "../assets/AppMain.css";
