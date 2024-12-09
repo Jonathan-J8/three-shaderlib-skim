@@ -6,20 +6,16 @@ const onShaderError = (kind) => (gl, _, vs, fs) => {
   //
 
   let shader = gl.getShaderSource(kind === "vertex" ? vs : fs);
-  if (!shader) throw new Error("Compilation error: shader not found");
+  if (!shader) throw new Error("shader source not found");
 
   const separator = _shaderRef.match(/^(.*)$/m)[0]; // separator is the first line of _shaderRef
   const regex = new RegExp(`([\\s\\S]*?)(?=${separator})`, "gm");
   shader = shader.match(regex); // get all characters from the beginning to the separator
-  if (!shader) throw new Error(`Compilation error: line "${separator}" not found'`);
+  if (!shader) throw new Error(`line "${separator}" not found'`);
 
   shader = shader[0].replace(/^[ \t]+(?=precision)/gm, ""); // additional: remove space and tab before "precision" statements
   _shaderRef = shader + _shaderRef;
   _shaderRef = _shaderRef.slice(0, -1); // remove the '/' at the end
-};
-
-const onBeforeCompile = (kind) => (glShader) => {
-  _shaderRef = glShader[kind] = glShader[kind] + "/"; // adding '/' at the end to provoke error
 };
 
 export const setupThree = (Three) => {
@@ -33,11 +29,8 @@ export const setupThree = (Three) => {
 };
 
 export const compileMaterial = (Three, shader, kind) => {
-  _renderer.debug.onShaderError = onShaderError(kind);
-  _mesh = undefined;
-  _scene.clear();
-
-  console.log(Three.ShaderLib);
+  if (!_renderer || !_scene || !_camera || !_geometry)
+    throw new Error("Threejs instances not setup");
 
   //
   // Setup the material
@@ -45,9 +38,12 @@ export const compileMaterial = (Three, shader, kind) => {
 
   const regex = new RegExp(`${shader}material`, "i");
   const materialName = Object.keys(Three).find((name) => name.match(regex));
-  if (!materialName) throw new Error(`Compilation error: material name is "${materialName}"`);
+  if (!materialName) throw new Error(`material "${materialName}" not found`);
   const material = new Three[materialName]();
-  material.onBeforeCompile = onBeforeCompile(`${kind}Shader`);
+  material.onBeforeCompile = (glShader) => {
+    const type = `${kind}Shader`;
+    _shaderRef = glShader[type] = glShader[type] + "/"; // adding '/' at the end to provoke error
+  };
 
   //
   // Setup the mesh
@@ -62,6 +58,7 @@ export const compileMaterial = (Three, shader, kind) => {
   // Render
   //
 
+  _renderer.debug.onShaderError = onShaderError(kind);
   _scene.add(_camera, _mesh);
   _renderer.render(_scene, _camera);
 

@@ -77,7 +77,7 @@ export default defineStore("main", () => {
     try {
       glslCode.value = compileMaterial(pkg.value, shader.value, kind.value);
     } catch (e) {
-      glslCode.value = "// Compiled version of this shader is not available";
+      glslCode.value = `// Compiled version of this shader is not available \n// ${e}`;
     }
   });
 
