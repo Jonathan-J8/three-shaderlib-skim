@@ -1,7 +1,7 @@
 import { watch, computed, ref } from "vue";
 import { useRouter } from "vue-router";
 import { defineStore } from "pinia";
-import { setupThree, compileMaterial } from "./compileMaterial";
+import compileMaterial from "./compileMaterial";
 
 export default defineStore("main", () => {
   const pkg = ref(null);
@@ -31,7 +31,6 @@ export default defineStore("main", () => {
         );
         loadState.value = "fulfilled";
         loadError.value = null;
-        setupThree(pkg.value); // setup here to improve later compilation process
       } catch (e) {
         // reset
         pkg.value = null;
@@ -69,17 +68,18 @@ export default defineStore("main", () => {
       return;
     }
 
-    const str = pkg.value.ShaderLib[shader.value][kind.value + "Shader"];
+    const chunks = pkg.value.ShaderLib[shader.value][kind.value + "Shader"];
 
     if (!compilation.value) {
-      glslCode.value = str;
+      glslCode.value = chunks;
       return;
     }
 
     try {
-      glslCode.value = compileMaterial(pkg.value, shader.value, kind.value) + str;
+      const additionnals = compileMaterial(pkg.value, shader.value, kind.value);
+      glslCode.value = additionnals + chunks;
     } catch (e) {
-      glslCode.value = `// Compiled version of this shader is not available \n` + str;
+      glslCode.value = `// Compiled version of this shader is not available \n` + chunks;
     }
   });
 

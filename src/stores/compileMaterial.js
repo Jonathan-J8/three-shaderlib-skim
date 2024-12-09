@@ -4,13 +4,12 @@ const SEPARATOR = "ErrorSeparator";
 
 const onShaderError = (kind) => (gl, _, vs, fs) => {
   //
-  // The compiled shader result on statements that are not present before the first line of the not compiled shader
+  // The compiled shader result on statements that are not present before the first line of the chunked shader
   //
-
-  const regex = new RegExp(`([\\s\\S]*?)(?=${SEPARATOR})`, "gm");
 
   let shader = gl.getShaderSource(kind === "vertex" ? vs : fs);
   if (!shader) throw new Error("shader source not found");
+  const regex = new RegExp(`([\\s\\S]*?)(?=${SEPARATOR})`, "gm");
   shader = shader.match(regex); // get all characters from the beginning to the separator
   if (!shader) throw new Error(`line "${SEPARATOR}" not found`);
   shader = shader[0].replace(/^[ \t]+(?=precision)/gm, ""); // additional: remove space and tab before "precision" statements
@@ -18,19 +17,14 @@ const onShaderError = (kind) => (gl, _, vs, fs) => {
   _shaderRef = shader;
 };
 
-export const setupThree = (Three) => {
+const compileMaterial = (Three, shader, kind) => {
   //
-  // Needed instances before compiling shader
+  // Setup instances
   //
   if (!_renderer) _renderer = new Three.WebGLRenderer();
   if (!_scene) _scene = new Three.Scene();
   if (!_camera) _camera = new Three.PerspectiveCamera();
   if (!_geometry) _geometry = new Three.PlaneGeometry();
-};
-
-export const compileMaterial = (Three, shader, kind) => {
-  if (!_renderer || !_scene || !_camera || !_geometry)
-    throw new Error("Threejs instances not setup");
 
   //
   // Setup the material
@@ -42,7 +36,7 @@ export const compileMaterial = (Three, shader, kind) => {
   const material = new Three[materialName]();
   material.onBeforeCompile = (glShader) => {
     const type = `${kind}Shader`;
-    glShader[type] = SEPARATOR + glShader[type]; // porvoke a desired error
+    glShader[type] = SEPARATOR + glShader[type]; // provoke a desired error
   };
 
   //
@@ -72,3 +66,5 @@ export const compileMaterial = (Three, shader, kind) => {
 
   return _shaderRef;
 };
+
+export default compileMaterial;
